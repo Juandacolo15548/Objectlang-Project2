@@ -1,0 +1,259 @@
+
+module ExpressionConverter
+
+import ParseTree;
+import ObjectlangAST;
+
+extend Expressions;
+
+// Punto de entrada: código Objectlang -> AST
+Expression convertExpression(str input) {
+    Tree parsed = parse(#start[Expr], input);
+    return convertExprTree(parsed.top);
+}
+
+// Convierte una producción del árbol sintáctico
+
+Expression convertExprTree(Tree current) {
+    // Expresiones entre paréntesis
+    if (appl(prod(label("grouped", _), _, _), _) := current) {
+        return grouped(convertExprTree(current.args[2]));
+    }
+
+        // Operadores binarios
+    if (appl(prod(label("addition", _), _, _), _) := current) {
+        return addition(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    if (appl(prod(label("subtraction", _), _, _), _) := current) {
+        return subtraction(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    if (appl(prod(label("multiplication", _), _, _), _) := current) {
+        return multiplication(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    if (appl(prod(label("division", _), _, _), _) := current) {
+        return division(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    if (appl(prod(label("modulo", _), _, _), _) := current) {
+        return modulo(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    if (appl(prod(label("power", _), _, _), _) := current) {
+        return power(
+            convertExprTree(current.args[0]),
+            convertExprTree(current.args[4])
+        );
+    }
+
+    // Operadores unarios
+    if (appl(prod(label("unaryMinus", _), _, _), _) := current) {
+        return unaryMinus(convertExprTree(current.args[2]));
+    }
+
+    if (appl(prod(label("unaryNeg", _), _, _), _) := current) {
+        return unaryNeg(convertExprTree(current.args[2]));
+    }
+
+    // Caso base: números enteros
+    if (appl(prod(label("number", _), _, _), _) := current) {
+        return implode(#Expression, current);
+    }
+
+    // Caso base: identificadores
+    if (appl(prod(label("identifier", _), _, _), _) := current) {
+        return implode(#Expression, current);
+    }
+
+        // Identificadores de tipo: Persona, Mi_Objeto2
+    if (appl(prod(label("typeIdentifier", _), _, _), _) := current) {
+        return implode(#Expression, current);
+    }
+
+    // Literales booleanos: true, false
+    if (appl(prod(label("booleanLiteral", _), _, _), _) := current) {
+        str booleanText = unparse(current);
+        bool booleanValue = booleanText == "true";
+        return booleanLiteral(booleanValue);
+    }
+
+    // Strings simples e interpolados
+    if (appl(prod(label("stringLiteral", _), _, _), _) := current) {
+    list[StringPart] parts = [];
+
+    Tree stringItems = current.args[2];
+
+    for (item <- stringItems.args[0].args) {
+        parts += convertStringPart(item);
+    }
+
+    return stringLiteral(parts);
+    }
+
+    // Postfix: primero convertir Primary.
+    
+    // Acceso a miembros y llamadas a funciones
+    if (appl(prod(sort("Postfix"), _, _), _) := current) {
+
+        Expression result = convertExprTree(current.args[0]);
+
+        list[Tree] operations = [
+            op | op <- current.args[2].args,
+            appl(prod(sort("PostfixOp"), _, _), _) := op
+        ];
+
+        for (op <- operations) {
+
+            // Ejemplo: persona.edad
+            if (appl(prod(lit("."), _, _), _) := op.args[0]) {
+                str name = implode(#str, op.args[2]);
+                result = memberAccess(result, name);
+            }
+
+            // Ejemplo: calcular(5, x + 2)
+            else if (appl(prod(lit("("), _, _), _) := op.args[0]) {
+                list[Expression] arguments =
+                    convertArgExpressions(op.args[2]);
+
+                result = call(result, arguments);
+            }
+        }
+
+        return result;
+    }
+
+        // Comparaciones
+    if (appl(prod(label("lessThan", _), _, _), _) := current) {
+        return lessThan(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("greaterThan", _), _, _), _) := current) {
+        return greaterThan(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("lessOrEqual", _), _, _), _) := current) {
+        return lessOrEqual(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("greaterOrEqual", _), _, _), _) := current) {
+        return greaterOrEqual(convertExprTree(current.args[0]),
+                            convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("notEqual", _), _, _), _) := current) {
+        return notEqual(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("equal", _), _, _), _) := current) {
+        return equal(convertExprTree(current.args[0]),
+                    convertExprTree(current.args[4]));
+    }
+
+    // Pertenencia
+    if (appl(prod(label("inExpression", _), _, _), _) := current) {
+        return inExpression(convertExprTree(current.args[0]),
+                            convertExprTree(current.args[4]));
+    }
+
+    // Operadores lógicos
+    if (appl(prod(label("logicalAnd", _), _, _), _) := current) {
+        return logicalAnd(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("logicalOr", _), _, _), _) := current) {
+        return logicalOr(convertExprTree(current.args[0]),
+                        convertExprTree(current.args[4]));
+    }
+
+    // Rangos
+    if (appl(prod(label("range", _), _, _), _) := current) {
+        return range(convertExprTree(current.args[0]),
+                    convertExprTree(current.args[4]));
+    }
+
+        // Expresiones condicionales
+    if (appl(prod(label("conditional", _), _, _), _) := current) {
+        return conditional(
+            convertExprTree(current.args[2]),
+            convertExprTree(current.args[6]),
+            convertExprTree(current.args[10])
+        );
+    }
+
+    // Eliminar envolturas con un único hijo
+    if (appl(_, [child]) := current) {
+        return convertExprTree(child);
+    }
+
+    throw "Producción todavía no soportada";
+}
+
+
+list[Expression] convertArgExpressions(Tree current) {
+
+    // Cuando encontramos un Expr, lo convertimos completo.
+    // No descendemos más para evitar contar sus subexpresiones
+    // como si fueran argumentos independientes.
+    if (appl(prod(sort("Expr"), _, _), _) := current) {
+        return [convertExprTree(current)];
+    }
+
+    list[Expression] arguments = [];
+
+    // Recorremos la estructura de ArgList, incluidas
+    // las repeticiones de argumentos separados por comas.
+    if (appl(_, children) := current) {
+        for (child <- children) {
+            arguments += convertArgExpressions(child);
+        }
+    }
+
+    return arguments;
+}
+
+StringPart convertStringPart(Tree current) {
+
+    // Texto normal, secuencias de escape e interpolación de identificadores
+    if (appl(prod(label("textPart", _), _, _), _) := current ||
+        appl(prod(label("escapePart", _), _, _), _) := current ||
+        appl(prod(label("identifierInterpolation", _), _, _), _) := current) {
+        return implode(#StringPart, current);
+    }
+
+    // Interpolación de una expresión completa: ${2+3}
+    if (appl(prod(label("expressionInterpolation", _), _, _), _) := current) {
+        return expressionInterpolation(
+            convertExprTree(current.args[2])
+        );
+    }
+
+    // StringContent -> StringInterpolation
+    if (appl(_, [child]) := current) {
+        return convertStringPart(child);
+    }
+
+    throw "Componente de string todavía no soportado";
+}
+
