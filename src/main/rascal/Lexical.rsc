@@ -16,6 +16,11 @@ keyword Keywords =
 lexical Identifier =
     ([a-z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_]) \ Keywords;
 
+lexical TypeIdentifier =
+    [A-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
+
+start syntax TypeIdentifierTest = TypeIdentifier;
+
 // Literales enteros
 lexical IntLiteral = [0-9]+;
 

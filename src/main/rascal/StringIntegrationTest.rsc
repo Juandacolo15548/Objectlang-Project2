@@ -5,22 +5,6 @@ import ObjectlangAST;
 
 extend Expressions;
 
-syntax StringInterpolation =
-    identifierInterpolation: "$" Identifier
-  | expressionInterpolation: "${" Expr "}"
-  ;
-
-lexical StringText =
-    ![\"\\$]+ !>> ![\"\\$];
-
-syntax StringContent =
-    textPart: StringText
-  | escapePart: EscapeChar
-  | StringInterpolation
-  ;
-
-lexical StringItems = StringContent*;
-
 start syntax FullStringTest =
     stringLiteral: "\"" StringItems "\"";
 
