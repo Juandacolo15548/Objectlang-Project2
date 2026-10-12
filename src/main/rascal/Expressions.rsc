@@ -4,7 +4,10 @@ import ParseTree;
 extend Lexical;
 
 // Espacios, tabulaciones y saltos de línea
-layout Whitespace = [\ \t\n\r]* !>> [\ \t\n\r];
+layout Whitespace =
+    ([\ \t\n\r] | LayoutComment)*
+    !>> [\ \t\n\r]
+    !>> "//";
 
 // Interpolaciones dentro de strings
 syntax StringInterpolation =
@@ -14,7 +17,8 @@ syntax StringInterpolation =
 
 // Fragmentos de texto dentro de strings
 lexical StringText =
-    ![\"\\$]+ !>> ![\"\\$];
+    ([\ -}] - [\"\\$])+
+    !>> ([\ -}] - [\"\\$]);
 
 // Componentes de un string
 syntax StringContent =

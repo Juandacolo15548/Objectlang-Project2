@@ -42,6 +42,48 @@ lexical EscapeChar =
   | "\\r"
   ;
 
+// Caracteres permitidos en comentarios
+// Caracteres básicos
+lexical Letter = [a-zA-Z];
+lexical Digit = [0-9];
+lexical Space = " ";
+lexical Tab = "\t";
+lexical Newline = "\n" | "\r";
+
+// Signos de puntuación permitidos por Objectlang
+lexical PunctuationChar =
+    "!" | "#" | "%" | "&" | "\'"
+  | "(" | ")" | "*" | "+" | ","
+  | "-" | "." | "/" | ":" | ";"
+  | "\<" | "=" | "\>" | "?" | "@"
+  | "[" | "]" | "^" | "_" | "`"
+  | "{" | "|" | "}"
+  ;
+
+// Caracteres permitidos dentro de comentarios
+lexical CommentChar =
+    Letter
+  | Digit
+  | Space
+  | Tab
+  | PunctuationChar
+  | "\\"
+  | "\""
+  | "$"
+  ;
+
+// Comentario de una línea
+lexical Comment =
+    "//" CommentChar* Newline?
+  ;
+
+// Comentario para el layout: no consume el salto de línea
+lexical LayoutComment =
+    "//" CommentChar* !>> CommentChar;
+
+// Entrada temporal para probar comentarios
+start syntax CommentTest = Comment;
+
 lexical SimpleStringLiteral =
     "\"" (SimpleStringChar | EscapeChar)* "\"";
 
