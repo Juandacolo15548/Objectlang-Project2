@@ -1,19 +1,40 @@
 module Expressions
 
 import ParseTree;
+extend Lexical;
 
 // Espacios, tabulaciones y saltos de línea
 layout Whitespace = [\ \t\n\r]* !>> [\ \t\n\r];
 
-// Números enteros
-lexical IntLiteral = [0-9]+;
+syntax Primary =
+    number: IntLiteral
+  | identifier: Identifier
+  | grouped: "(" Expr ")"
+  ;
+
+syntax Postfix =
+    Primary PostfixOp*
+  ;
+
+syntax UnaryExpr =
+    Postfix
+  | unaryMinus: "-" UnaryExpr
+  | unaryNeg: "neg" UnaryExpr
+  ;
+
+syntax PowExpr =
+    UnaryExpr
+  | power: UnaryExpr "**" PowExpr
+  ;
 
 // Multiplicación, división y módulo
 syntax MulExpr =
-    number: IntLiteral
-  | multiplication: MulExpr "*" IntLiteral
-  | division: MulExpr "/" IntLiteral
-  | modulo: MulExpr "%" IntLiteral
+    PowExpr
+  | left (
+        multiplication: MulExpr "*" MulExpr
+      | division: MulExpr "/" MulExpr
+      | modulo: MulExpr "%" MulExpr
+    )
   ;
 
 // Suma y resta
@@ -33,3 +54,16 @@ syntax ExprInterpolation =
 // Punto de entrada temporal para pruebas
 start syntax ExprInterpolationTest =
     ExprInterpolation;
+
+syntax ArgList =
+    Expr ("," Expr)*;
+
+start syntax ArgListTest =
+    ArgList;
+
+syntax PostfixOp =
+    "." Identifier
+  | "(" ArgList? ")"
+  ;
+
+start syntax PostfixOpTest = PostfixOp;

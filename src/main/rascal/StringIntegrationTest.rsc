@@ -3,7 +3,6 @@ module StringIntegrationTest
 import ParseTree;
 import ObjectlangAST;
 
-extend Lexical;
 extend Expressions;
 
 syntax StringInterpolation =
