@@ -29,11 +29,22 @@ syntax Extends
 syntax GenericParams 
   = genericParams: "[" {GenericParam ","}+ params "]";
 
+syntax Variance 
+  = covariant: "+"
+  | contravariant: "-" ;
+
+syntax Mutability 
+  = valMut: "val"
+  | varMut: "var" ;
+
+
+
+
 syntax GenericParam 
-  = genericParam: ("+" | "-")? variance TypeIdentifier typeId;
+  = genericParam: Variance? variance TypeIdentifier typeId;
 
 syntax ConstructorParam 
-  = constructorParam: ("val" | "var") mutability Identifier name ":" Type paramType;
+  = constructorParam: Mutability mutability Identifier name ":" Type paramType;
 
 
 syntax Block = block: "{" Expr* statements "}";
