@@ -15,6 +15,19 @@ data Expression
     | grouped(Expression inner)
     | memberAccess(Expression target, str name)
     | call(Expression target, list[Expression] arguments)
+    | lessThan(Expression left, Expression right)
+    | greaterThan(Expression left, Expression right)
+    | lessOrEqual(Expression left, Expression right)
+    | greaterOrEqual(Expression left, Expression right)
+    | notEqual(Expression left, Expression right)
+    | equal(Expression left, Expression right)
+    | inExpression(Expression element, Expression collection)
+    | logicalAnd(Expression left, Expression right)
+    | logicalOr(Expression left, Expression right)
+    | range(Expression from, Expression to)
+    | conditional(Expression condition, Expression thenBranch, Expression elseBranch)
+    | typeIdentifier(str name)
+    | booleanLiteral(bool booleanValue)
     ;
 
 data StringPart
