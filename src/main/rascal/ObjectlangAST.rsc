@@ -1,7 +1,5 @@
 module ObjectlangAST
 
-// AST de expresiones de Objectlang
-
 data Expression
     = number(int literal)
     | addition(Expression left, Expression right)
@@ -9,5 +7,12 @@ data Expression
     | multiplication(Expression left, Expression right)
     | division(Expression left, Expression right)
     | modulo(Expression left, Expression right)
+    | stringLiteral(list[StringPart] parts)
     ;
-    
+
+data StringPart
+    = textPart(str content)
+    | escapePart(str sequence)
+    | identifierInterpolation(str name)
+    | expressionInterpolation(Expression expression)
+    ;
