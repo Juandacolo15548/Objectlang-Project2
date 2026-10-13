@@ -9,8 +9,10 @@ syntax Postfix
   = idPostfix: Identifier id 
   | fieldPostfix: Postfix obj "." Identifier field
   | newPostfix: NewExpr newExpr
-  | blockPostfix: Block block ;
-
+  | blockPostfix: Block block
+  | callPostfix: Postfix f "(" {Expr ","}* args ")"
+  | parenPostfix: "(" Expr e ")" ;
+  
 syntax NewExpr = newExprStub: "new" Type type ClassBody? body;
 
 syntax OverrideDef 
