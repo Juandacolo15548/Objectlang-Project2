@@ -1,0 +1,291 @@
+module StructuresConverter
+
+import ParseTree;
+import ObjectlangAST;
+import Desambiguar;
+import ExpressionConverter;
+import String;
+
+extend Structures;
+
+// =======================================================
+// PUNTO DE ENTRADA PRINCIPAL
+// =======================================================
+
+Program convertProgram(str input) {
+    Tree parsed = parse(#start[Module], input, allowAmbiguity=true);
+    return convertModuleTree(parsed.top);
+}
+
+// =======================================================
+// CONVERSORES DE MÓDULO Y DECLARACIONES
+// =======================================================
+
+Program convertModuleTree(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("moduleDef", _), _, _), _) := current) {
+        list[Declaration] items = [convertDeclaration(item) | item <- getListChildren(current.args[0])];
+        Statement main = convertMainMethod(current.args[2]);
+        return moduleProgram(items, main);
+    }
+    throw "Nodo no reconocido como Module: <current>";
+}
+
+Statement convertMainMethod(Tree current) {
+    current = elegir(current);
+    return exprStmt(blockExpression(convertBlock(current.args[4]))); 
+}
+
+Declaration convertDeclaration(Tree current) {
+    current = elegir(current);
+    
+    if (appl(prod(label("objectItem", _), _, _), _) := current) return convertDeclaration(current.args[0]);
+    if (appl(prod(label("methodItem", _), _, _), _) := current) return convertDeclaration(current.args[0]);
+
+    if (appl(prod(label("objectDef", _), _, _), _) := current) {
+        str name = implode(#str, current.args[2]);
+        
+        list[GenericParameter] generics = [];
+        if (appl(regular(opt(_)), [genTree]) := current.args[4]) {
+            generics = [convertGenericParam(g) | g <- getListChildren(genTree.args[2])];
+        }
+
+        list[TypeNode] superType = [];
+        if (appl(regular(opt(_)), [extTree]) := current.args[6]) {
+            superType = [convertType(extTree.args[2])];
+        }
+
+        list[ConstructorParameter] constructorArgs = [];
+        if (appl(regular(opt(_)), [cArgsTree]) := current.args[8]) {
+            constructorArgs = [convertConstructorParam(p) | p <- getListChildren(cArgsTree.args[2])];
+        }
+
+        return objectDeclaration(name, generics, superType, constructorArgs);
+    }
+
+    if (appl(prod(label("methodAssign", _), _, _), _) := current) {
+        str targetType = implode(#str, current.args[0]);
+        str name = implode(#str, current.args[4]);
+        Declaration methodDef = convertDeclaration(current.args[8]);
+        return methodAssignment(targetType, name, methodDef);
+    }
+
+    if (appl(prod(label("methodDef", _), _, _), _) := current) {
+        list[MethodParameter] params = [convertMethodParam(p) | p <- getListChildren(current.args[4])];
+
+        list[TypeNode] returnType = [];
+        if (appl(regular(opt(_)), [rtTree]) := current.args[8]) {
+            returnType = [convertType(rtTree.args[2])];
+        }
+
+        list[BlockNode] body = [];
+        if (appl(regular(opt(_)), [bTree]) := current.args[10]) {
+            body = [convertBlock(bTree)];
+        }
+
+        return methodDefinition(params, returnType, body);
+    }
+
+    throw "Declaración no soportada: <current>";
+}
+
+// =======================================================
+// CONVERSORES DE PARÁMETROS Y TIPOS
+// =======================================================
+
+TypeNode convertType(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("simpleType", _), _, _), _) := current) {
+        return simpleType(implode(#str, current.args[0]));
+    }
+    if (appl(prod(label("genericType", _), _, _), _) := current) {
+        str name = implode(#str, current.args[0]);
+        list[TypeNode] typeArgs = [convertType(t) | t <- getListChildren(current.args[4])];
+        return genericType(name, typeArgs);
+    }
+    throw "Type no soportado";
+}
+
+GenericParameter convertGenericParam(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("genericParam", _), _, _), _) := current) {
+        str variance = "";
+        if (appl(regular(opt(_)), [varTree]) := current.args[0]) {
+            if (appl(prod(label("covariant", _), _, _), _) := varTree) variance = "+";
+            if (appl(prod(label("contravariant", _), _, _), _) := varTree) variance = "-";
+        }
+        return genericParameter(variance, implode(#str, current.args[2]));
+    }
+    throw "GenericParam no soportado";
+}
+
+ConstructorParameter convertConstructorParam(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("constructorParam", _), _, _), _) := current) {
+        str mutability = "";
+        if (appl(prod(label("valMut", _), _, _), _) := current.args[0]) mutability = "val";
+        if (appl(prod(label("varMut", _), _, _), _) := current.args[0]) mutability = "var";
+        return constructorParameter(mutability, implode(#str, current.args[2]), convertType(current.args[6]));
+    }
+    throw "ConstructorParam no soportado";
+}
+
+MethodParameter convertMethodParam(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("methodParam", _), _, _), _) := current) {
+        return methodParameter(implode(#str, current.args[0]), convertType(current.args[4]));
+    }
+    throw "MethodParam no soportado";
+}
+
+// =======================================================
+// CONVERSORES DE BLOQUES Y SENTENCIAS
+// =======================================================
+
+BlockNode convertBlock(Tree current) {
+    current = elegir(current);
+    list[Statement] stmts = extractStatements(current.args[2]);
+    return blockNode(stmts);
+}
+
+list[Statement] extractStatements(Tree current) {
+    current = elegir(current);
+    if (appl(Production p, list[Tree] args) := current) {
+        if (/sort("Stmt") := p.def) return [convertStatement(current)];
+        list[Statement] result = [];
+        for (Tree child <- args, child.def.sort != "layout") {
+            result += extractStatements(child);
+        }
+        return result;
+    }
+    return [];
+}
+
+Statement convertStatement(Tree current) {
+    current = elegir(current);
+
+    if (appl(prod(label("valStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+    if (appl(prod(label("varStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+    if (appl(prod(label("assignmentStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+    if (appl(prod(label("forStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+    if (appl(prod(label("exprStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+
+    if (appl(prod(label("valDecl", _), _, _), _) := current) {
+        str name = implode(#str, current.args[2]);
+        list[TypeNode] typeAnn = [];
+        if (appl(regular(opt(_)), [tTree]) := current.args[4]) typeAnn = [convertType(tTree.args[2])];
+        return valDecl(name, typeAnn, convertExprTree(current.args[8]));
+    }
+    if (appl(prod(label("varDecl", _), _, _), _) := current) {
+        str name = implode(#str, current.args[2]);
+        list[TypeNode] typeAnn = [];
+        if (appl(regular(opt(_)), [tTree]) := current.args[4]) typeAnn = [convertType(tTree.args[2])];
+        return varDecl(name, typeAnn, convertExprTree(current.args[8]));
+    }
+
+    if (appl(prod(label("assignStmt", _), _, _), _) := current) {
+        return assignmentStmt(convertExprTree(current.args[0]), convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(label("forStmt", _), _, _), _) := current) {
+        return forStmt(convertStatement(current.args[4]), convertStatement(current.args[8]));
+    }
+    if (appl(prod(label("forBinding", _), _, _), _) := current) {
+        PatternNode pattern = convertPattern(current.args[0]);
+        str op = "";
+        if (appl(prod(label("arrowOp", _), _, _), _) := current.args[2]) op = "\<-";
+        if (appl(prod(label("inOp", _), _, _), _) := current.args[2]) op = "in";
+        return forBinding(pattern, op, convertExprTree(current.args[4]));
+    }
+
+    if (appl(prod(sort("Expr"), _, _), _) := current) {
+        return exprStmt(convertExprTree(current));
+    }
+
+    throw "Statement no soportado: <current>";
+}
+
+PatternNode convertPattern(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("idPattern", _), _, _), _) := current) {
+        return idPattern(implode(#str, current.args[0]));
+    }
+    if (appl(prod(label("tuplePattern", _), _, _), _) := current) {
+        str head = implode(#str, current.args[2]);
+        list[str] tail = [implode(#str, t) | t <- getListChildren(current.args[4])];
+        return tuplePattern(head, tail);
+    }
+    throw "Pattern no soportado";
+}
+
+// =======================================================
+// CONVERSORES DE NEW EXPRESSION Y OVERRIDES
+// =======================================================
+
+Expression convertNew(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("newObject", _), _, _), _) := current) {
+        TypeNode t = convertType(current.args[2]);
+
+        list[Expression] argsList = [];
+        if (appl(regular(opt(_)), [Tree aTree]) := current.args[6]) {
+            argsList = convertArgExpressions(aTree);
+        }
+
+        list[OverrideDefinition] overrides = [];
+        if (appl(regular(opt(_)), [appl(_, list[Tree] cbArgs)]) := current.args[10]) {
+            overrides = convertOverridesList(cbArgs[2]);
+        }
+
+        return newObject(t, argsList, overrides);
+    }
+    throw "NewExpression no soportado";
+}
+
+OverrideDefinition convertOverride(Tree current) {
+    current = elegir(current);
+    if (appl(prod(label("overrideDef", _), _, _), list[Tree] currentArgs) := current) {
+        str name = implode(#str, currentArgs[2]);
+        
+        list[MethodParameter] params = convertMethodParamsList(currentArgs[6]);
+        
+        TypeNode returnType = convertType(currentArgs[12]);
+        BlockNode body = convertBlock(currentArgs[16]);
+        return overrideDefinition(name, params, returnType, body);
+    }
+    throw "OverrideDef no soportado";
+}
+
+// =======================================================
+// FUNCIONES AUXILIARES
+// =======================================================
+
+list[OverrideDefinition] convertOverridesList(Tree current) {
+    list[OverrideDefinition] res = [];
+    for (Tree c <- getListChildren(current)) {
+        res += convertOverride(c);
+    }
+    return res;
+}
+
+list[MethodParameter] convertMethodParamsList(Tree current) {
+    list[MethodParameter] res = [];
+    for (Tree c <- getListChildren(current)) {
+        res += convertMethodParam(c);
+    }
+    return res;
+}
+
+list[Tree] getListChildren(Tree current) {
+    current = elegir(current);
+    if (appl(regular(_), list[Tree] args) := current) {
+        list[Tree] result = [];
+        for (Tree child <- args) {
+            if (child.def.sort != "layout" && child.def.sort != "keywords" && !(appl(prod(lit(_),_,_),_) := child)) {
+                result += getListChildren(child);
+            }
+        }
+        return result;
+    }
+    return [current];
+}
