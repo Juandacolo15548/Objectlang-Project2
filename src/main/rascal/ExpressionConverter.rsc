@@ -12,64 +12,79 @@ Expression convertExpression(str input) {
     return convertExprTree(parsed.top);
 }
 
-// Convierte una producción del árbol sintáctico
+// Conversión estructural predeterminada.
+// El conversor independiente de expresiones no admite
+// nodos que pertenecen exclusivamente a Structures.
+Expression unsupportedStructuralExpr(Tree current) {
+    throw "Expresión estructural no soportada en el conversor independiente";
+}
 
+// Convierte una producción del árbol sintáctico
+// Mantiene la interfaz original para las pruebas existentes.
 Expression convertExprTree(Tree current) {
+    return convertExprTree(current, unsupportedStructuralExpr);
+}
+
+// Permite delegar construcciones estructurales.
+Expression convertExprTree(
+    Tree current,
+    Expression (Tree) convertStructural
+) {
     // Expresiones entre paréntesis
     if (appl(prod(label("grouped", _), _, _), _) := current) {
-        return grouped(convertExprTree(current.args[2]));
+        return grouped(convertExprTree(current.args[2], convertStructural));
     }
 
-        // Operadores binarios
+    // Operadores binarios
     if (appl(prod(label("addition", _), _, _), _) := current) {
         return addition(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     if (appl(prod(label("subtraction", _), _, _), _) := current) {
         return subtraction(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     if (appl(prod(label("multiplication", _), _, _), _) := current) {
         return multiplication(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     if (appl(prod(label("division", _), _, _), _) := current) {
         return division(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     if (appl(prod(label("modulo", _), _, _), _) := current) {
         return modulo(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     if (appl(prod(label("power", _), _, _), _) := current) {
         return power(
-            convertExprTree(current.args[0]),
-            convertExprTree(current.args[4])
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
         );
     }
 
     // Operadores unarios
     if (appl(prod(label("unaryMinus", _), _, _), _) := current) {
-        return unaryMinus(convertExprTree(current.args[2]));
+        return unaryMinus(convertExprTree(current.args[2], convertStructural));
     }
 
     if (appl(prod(label("unaryNeg", _), _, _), _) := current) {
-        return unaryNeg(convertExprTree(current.args[2]));
+        return unaryNeg(convertExprTree(current.args[2], convertStructural));
     }
 
     // Caso base: números enteros
@@ -82,7 +97,7 @@ Expression convertExprTree(Tree current) {
         return implode(#Expression, current);
     }
 
-        // Identificadores de tipo: Persona, Mi_Objeto2
+    // Identificadores de tipo: Persona, Mi_Objeto2
     if (appl(prod(label("typeIdentifier", _), _, _), _) := current) {
         return implode(#Expression, current);
     }
@@ -96,23 +111,23 @@ Expression convertExprTree(Tree current) {
 
     // Strings simples e interpolados
     if (appl(prod(label("stringLiteral", _), _, _), _) := current) {
-    list[StringPart] parts = [];
+        list[StringPart] parts = [];
 
-    Tree stringItems = current.args[2];
+        Tree stringItems = current.args[2];
 
-    for (item <- stringItems.args[0].args) {
-        parts += convertStringPart(item);
-    }
+        for (item <- stringItems.args[0].args) {
+            parts += convertStringPart(item, convertStructural);
+        }
 
-    return stringLiteral(parts);
+        return stringLiteral(parts);
     }
 
     // Postfix: primero convertir Primary.
-    
+
     // Acceso a miembros y llamadas a funciones
     if (appl(prod(sort("Postfix"), _, _), _) := current) {
 
-        Expression result = convertExprTree(current.args[0]);
+        Expression result = convertExprTree(current.args[0], convertStructural);
 
         list[Tree] operations = [
             op | op <- current.args[2].args,
@@ -130,7 +145,7 @@ Expression convertExprTree(Tree current) {
             // Ejemplo: calcular(5, x + 2)
             else if (appl(prod(lit("("), _, _), _) := op.args[0]) {
                 list[Expression] arguments =
-                    convertArgExpressions(op.args[2]);
+                    convertArgExpressions(op.args[2], convertStructural);
 
                 result = call(result, arguments);
             }
@@ -139,121 +154,154 @@ Expression convertExprTree(Tree current) {
         return result;
     }
 
-        // Comparaciones
+    // Comparaciones
     if (appl(prod(label("lessThan", _), _, _), _) := current) {
-        return lessThan(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return lessThan(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("greaterThan", _), _, _), _) := current) {
-        return greaterThan(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return greaterThan(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("lessOrEqual", _), _, _), _) := current) {
-        return lessOrEqual(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return lessOrEqual(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("greaterOrEqual", _), _, _), _) := current) {
-        return greaterOrEqual(convertExprTree(current.args[0]),
-                            convertExprTree(current.args[4]));
+        return greaterOrEqual(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("notEqual", _), _, _), _) := current) {
-        return notEqual(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return notEqual(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("equal", _), _, _), _) := current) {
-        return equal(convertExprTree(current.args[0]),
-                    convertExprTree(current.args[4]));
+        return equal(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     // Pertenencia
     if (appl(prod(label("inExpression", _), _, _), _) := current) {
-        return inExpression(convertExprTree(current.args[0]),
-                            convertExprTree(current.args[4]));
+        return inExpression(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     // Operadores lógicos
     if (appl(prod(label("logicalAnd", _), _, _), _) := current) {
-        return logicalAnd(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return logicalAnd(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     if (appl(prod(label("logicalOr", _), _, _), _) := current) {
-        return logicalOr(convertExprTree(current.args[0]),
-                        convertExprTree(current.args[4]));
+        return logicalOr(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
     // Rangos
     if (appl(prod(label("range", _), _, _), _) := current) {
-        return range(convertExprTree(current.args[0]),
-                    convertExprTree(current.args[4]));
+        return range(
+            convertExprTree(current.args[0], convertStructural),
+            convertExprTree(current.args[4], convertStructural)
+        );
     }
 
-        // Expresiones condicionales
+    // Expresiones condicionales
     if (appl(prod(label("conditional", _), _, _), _) := current) {
         return conditional(
-            convertExprTree(current.args[2]),
-            convertExprTree(current.args[6]),
-            convertExprTree(current.args[10])
+            convertExprTree(current.args[2], convertStructural),
+            convertExprTree(current.args[6], convertStructural),
+            convertExprTree(current.args[10], convertStructural)
         );
+    }
+
+    // Construcciones propias de la gramática integrada.
+    if (appl(prod(label("newWithArgs", _), _, _), _) := current ||
+        appl(prod(label("newWithBody", _), _, _), _) := current ||
+        appl(prod(label("blockExpression", _), _, _), _) := current) {
+        return convertStructural(current);
     }
 
     // Eliminar envolturas con un único hijo
     if (appl(_, [child]) := current) {
-        return convertExprTree(child);
+        return convertExprTree(child, convertStructural);
     }
 
     throw "Producción todavía no soportada";
 }
 
 
-list[Expression] convertArgExpressions(Tree current) {
 
-    // Cuando encontramos un Expr, lo convertimos completo.
-    // No descendemos más para evitar contar sus subexpresiones
-    // como si fueran argumentos independientes.
+list[Expression] convertArgExpressions(Tree current) {
+    return convertArgExpressions(current, unsupportedStructuralExpr);
+}
+
+list[Expression] convertArgExpressions(
+    Tree current,
+    Expression (Tree) convertStructural
+) {
     if (appl(prod(sort("Expr"), _, _), _) := current) {
-        return [convertExprTree(current)];
+        return [convertExprTree(current, convertStructural)];
     }
 
     list[Expression] arguments = [];
 
-    // Recorremos la estructura de ArgList, incluidas
-    // las repeticiones de argumentos separados por comas.
     if (appl(_, children) := current) {
         for (child <- children) {
-            arguments += convertArgExpressions(child);
+            arguments += convertArgExpressions(child, convertStructural);
         }
     }
 
     return arguments;
 }
 
-StringPart convertStringPart(Tree current) {
 
-    // Texto normal, secuencias de escape e interpolación de identificadores
+
+StringPart convertStringPart(Tree current) {
+    return convertStringPart(current, unsupportedStructuralExpr);
+}
+
+StringPart convertStringPart(
+    Tree current,
+    Expression (Tree) convertStructural
+) {
     if (appl(prod(label("textPart", _), _, _), _) := current ||
         appl(prod(label("escapePart", _), _, _), _) := current ||
         appl(prod(label("identifierInterpolation", _), _, _), _) := current) {
         return implode(#StringPart, current);
     }
 
-    // Interpolación de una expresión completa: ${2+3}
     if (appl(prod(label("expressionInterpolation", _), _, _), _) := current) {
         return expressionInterpolation(
-            convertExprTree(current.args[2])
+            convertExprTree(current.args[2], convertStructural)
         );
     }
 
-    // StringContent -> StringInterpolation
     if (appl(_, [child]) := current) {
-        return convertStringPart(child);
+        return convertStringPart(child, convertStructural);
     }
 
     throw "Componente de string todavía no soportado";
 }
-
