@@ -1,17 +1,6 @@
 module Structures
 
-layout Espacios = [\ \t\n\r]* !>> [\ \t\n\r];
-lexical TypeIdentifier = [a-zA-Z0-9_] !<< [A-Z] [a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
-lexical Identifier = ([a-zA-Z0-9_] !<< [a-z] [a-zA-Z0-9_]* !>> [a-zA-Z0-9_]) \ PalabrasReservadas;
-
-syntax Expr = postfixExpr: Postfix p;
-syntax Postfix 
-  = idPostfix: Identifier id 
-  | fieldPostfix: Postfix obj "." Identifier field
-  | newPostfix: NewExpr newExpr
-  | blockPostfix: Block block
-  | callPostfix: Postfix f "(" {Expr ","}* args ")"
-  | parenPostfix: "(" Expr e ")" ;
+extend Expressions;
   
 syntax NewExpr = newExprStub: "new" Type type ClassBody? body;
 
@@ -115,4 +104,7 @@ syntax ReturnType
 keyword PalabrasReservadas 
   = "object" | "extends" | "val" | "var" | "method" | "main" | "override" | "new" | "for" | "in";
 
-
+// Puntos de entrada para diagnosticar ambigüedades
+start syntax ValDeclTest = ValDecl;
+start syntax StmtTest = Stmt;
+start syntax BlockTest = Block;

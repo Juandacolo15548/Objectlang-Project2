@@ -22,7 +22,7 @@ lexical TypeIdentifier =
 start syntax TypeIdentifierTest = TypeIdentifier;
 
 // Literales enteros
-lexical IntLiteral = [0-9]+;
+lexical IntLiteral = [0-9]+ !>> [0-9];
 
 // Literales booleanos
 syntax BoolLiteral = "true" | "false";
