@@ -2,7 +2,13 @@ module Structures
 
 extend Expressions;
   
-syntax NewExpr = newExprStub: "new" Type type ClassBody? body;
+syntax NewExpr
+    = newWithArgs: "new" Type "(" ArgList? ")" ClassBody?
+    | newWithBody: "new" Type ClassBody
+    ;
+
+// Integra la creación de objetos como expresión primaria
+syntax Primary = NewExpr;
 
 syntax OverrideDef 
   = overrideDef: "override" Identifier name "(" {MethodParam ","}* params ")" ":" Type returnType "=" Block body;
