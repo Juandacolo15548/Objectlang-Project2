@@ -36,3 +36,35 @@ data StringPart
     | identifierInterpolation(str name)
     | expressionInterpolation(Expression expression)
     ;
+
+data Program 
+    = moduleProgram(list[Declaration] items, Statement mainMethod);
+
+data Declaration 
+    = objectDeclaration(str name, list[GenericParameter] generics, list[TypeNode] superType, list[ConstructorParameter] constructorArgs)
+    | methodAssignment(str targetType, str name, Declaration methodDef)
+    | methodDefinition(list[MethodParameter] params, list[TypeNode] returnType, list[BlockNode] body);
+
+data Statement 
+    = valDecl(str name, list[TypeNode] typeAnn, Expression expr)
+    | varDecl(str name, list[TypeNode] typeAnn, Expression expr)
+    | assignmentStmt(Expression target, Expression expr)
+    | forStmt(Statement binding, Statement body)
+    | exprStmt(Expression expr)
+    | forBinding(PatternNode pattern, str op, Expression expr);
+
+data BlockNode 
+    = blockNode(list[Statement] statements);
+
+data PatternNode 
+    = idPattern(str id)
+    | tuplePattern(str head, list[str] tail);
+
+data GenericParameter = genericParameter(str variance, str typeId);
+data ConstructorParameter = constructorParameter(str mutability, str name, TypeNode \type);
+data MethodParameter = methodParameter(str name, TypeNode \type);
+data OverrideDefinition = overrideDefinition(str name, list[MethodParameter] params, TypeNode returnType, BlockNode body);
+
+data TypeNode 
+    = simpleType(str name)
+    | genericType(str name, list[TypeNode] typeArgs);

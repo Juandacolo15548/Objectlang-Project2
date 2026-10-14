@@ -13,16 +13,14 @@ keyword Keywords =
   ;
 
 // Identificadores
-lexical Identifier =
-    ([a-z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_]) \ Keywords;
+lexical Identifier = [a-zA-Z0-9_] !<< [a-z] [a-zA-Z0-9_]* !>> [a-zA-Z0-9_] \ Keywords;
 
-lexical TypeIdentifier =
-    [A-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
+lexical TypeIdentifier = [a-zA-Z0-9_] !<< [A-Z] [a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
 
 start syntax TypeIdentifierTest = TypeIdentifier;
 
 // Literales enteros
-lexical IntLiteral = [0-9]+;
+lexical IntLiteral = [0-9]+ !>> [0-9];
 
 // Literales booleanos
 syntax BoolLiteral = "true" | "false";
