@@ -1,0 +1,101 @@
+module Lexical
+
+// Palabras reservadas de Objectlang
+keyword Keywords =
+    "val" | "var"
+  | "method" | "main"
+  | "object" | "extends" | "override"
+  | "if" | "then" | "else"
+  | "for" | "in"
+  | "new"
+  | "true" | "false"
+  | "and" | "or" | "neg"
+  ;
+
+// Identificadores
+lexical Identifier =
+    ([a-z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_]) \ Keywords;
+
+lexical TypeIdentifier =
+    [A-Z][a-zA-Z0-9_]* !>> [a-zA-Z0-9_];
+
+start syntax TypeIdentifierTest = TypeIdentifier;
+
+// Literales enteros
+lexical IntLiteral = [0-9]+;
+
+// Literales booleanos
+syntax BoolLiteral = "true" | "false";
+
+// Reglas temporales de prueba
+start syntax IntegerTest = IntLiteral;
+start syntax BooleanTest = BoolLiteral;
+
+lexical SimpleStringChar = ![\"\\$];
+
+lexical EscapeChar =
+    "\\\""
+  | "\\$"
+  | "\\\\"
+  | "\\n"
+  | "\\t"
+  | "\\r"
+  ;
+
+// Caracteres permitidos en comentarios
+// Caracteres básicos
+lexical Letter = [a-zA-Z];
+lexical Digit = [0-9];
+lexical Space = " ";
+lexical Tab = "\t";
+lexical Newline = "\n" | "\r";
+
+// Signos de puntuación permitidos por Objectlang
+lexical PunctuationChar =
+    "!" | "#" | "%" | "&" | "\'"
+  | "(" | ")" | "*" | "+" | ","
+  | "-" | "." | "/" | ":" | ";"
+  | "\<" | "=" | "\>" | "?" | "@"
+  | "[" | "]" | "^" | "_" | "`"
+  | "{" | "|" | "}"
+  ;
+
+// Caracteres permitidos dentro de comentarios
+lexical CommentChar =
+    Letter
+  | Digit
+  | Space
+  | Tab
+  | PunctuationChar
+  | "\\"
+  | "\""
+  | "$"
+  ;
+
+// Comentario de una línea
+lexical Comment =
+    "//" CommentChar* Newline?
+  ;
+
+// Comentario para el layout: no consume el salto de línea
+lexical LayoutComment =
+    "//" CommentChar* !>> CommentChar;
+
+// Entrada temporal para probar comentarios
+start syntax CommentTest = Comment;
+
+lexical SimpleStringLiteral =
+    "\"" (SimpleStringChar | EscapeChar)* "\"";
+
+lexical IdentifierInterpolation =
+    "$" Identifier;
+
+lexical InterpolatedStringLiteral =
+    "\"" (SimpleStringChar | EscapeChar | IdentifierInterpolation)* "\"";
+
+start syntax InterpolatedStringTest = InterpolatedStringLiteral;
+
+start syntax StringTest = SimpleStringLiteral;
+
+// Regla temporal para pruebas
+start syntax IdentifierTest = Identifier;
