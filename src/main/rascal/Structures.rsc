@@ -105,8 +105,10 @@ syntax ConstructorParam
   = constructorParam: Mutability mutability Identifier name ":" Type paramType;
 
 
-syntax Block =
-    block: "{" {Stmt StatementSeparator}* statements "}";
+syntax Block
+    = block: "{" {Stmt StatementSeparator}+ statements "}"
+    | emptyBlock: "{" "}"
+    ;
 
 syntax ReturnType 
   = returnTypeDef: ":" Type type;
@@ -120,4 +122,4 @@ start syntax ValDeclTest = ValDecl;
 start syntax StmtTest = Stmt;
 start syntax BlockTest = Block;
 
-lexical StatementSeparator = [\n\r]+;
+lexical StatementSeparator = [\n\r] !<< [\n\r];
