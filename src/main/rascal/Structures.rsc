@@ -73,8 +73,8 @@ syntax MethodParam
 syntax MethodDef 
   = methodDef: "method" "(" {MethodParam ","}* params ")" ReturnType? returnType Block? body;
 
-syntax ObjectDef  
-  = objectDef: "object" TypeIdentifier name 
+syntax ObjectDef
+    = objectDef: "object" !>> [a-zA-Z0-9_] TypeIdentifier name
                GenericParams? generics 
                Extends? superType 
                ConstructorArgs? constructorArgs;

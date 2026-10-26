@@ -1,8 +1,8 @@
-module StructureTests
+module StructuresTests
 
+import StructuresConverter;
 import ParseTree;
 import ObjectlangAST;
-import StructureConverter;
 import Node;
 import Exception;
 

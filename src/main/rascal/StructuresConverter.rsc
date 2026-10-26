@@ -164,35 +164,30 @@ Statement convertStatement(Tree current) {
     if (appl(prod(label("valStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
     if (appl(prod(label("varStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
     if (appl(prod(label("assignmentStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
-    if (appl(prod(label("forStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
+    if (appl(prod(label("forStmt", sort("Stmt")), _, _), _) := current) return convertStatement(current.args[0]);
     if (appl(prod(label("exprStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
 
     if (appl(prod(label("valDecl", _), _, _), _) := current) {
         str name = implode(#str, current.args[2]);
         list[TypeNode] typeAnn = [];
         if (appl(regular(opt(_)), [tTree]) := current.args[4]) typeAnn = [convertType(tTree.args[2])];
-        return valDecl(name, typeAnn, convertExprTree(current.args[8]));
+        return valDecl(name, typeAnn, convertExprTree(current.args[8], convertStructuralExpr));
     }
     if (appl(prod(label("varDecl", _), _, _), _) := current) {
         str name = implode(#str, current.args[2]);
         list[TypeNode] typeAnn = [];
         if (appl(regular(opt(_)), [tTree]) := current.args[4]) typeAnn = [convertType(tTree.args[2])];
-        return varDecl(name, typeAnn, convertExprTree(current.args[8]));
+        return varDecl(name, typeAnn, convertExprTree(current.args[8], convertStructuralExpr));
     }
 
     if (appl(prod(label("assignStmt", _), _, _), _) := current) {
-        return assignmentStmt(convertExprTree(current.args[0]), convertExprTree(current.args[4]));
+        return assignmentStmt(convertExprTree(current.args[0], convertStructuralExpr), convertExprTree(current.args[4], convertStructuralExpr));
     }
 
-    if (appl(prod(label("forStmt", _), _, _), _) := current) {
-        return forStmt(convertStatement(current.args[4]), convertStatement(current.args[8]));
-    }
-    if (appl(prod(label("forBinding", _), _, _), _) := current) {
-        PatternNode pattern = convertPattern(current.args[0]);
-        str op = "";
-        if (appl(prod(label("arrowOp", _), _, _), _) := current.args[2]) op = "\<-";
-        if (appl(prod(label("inOp", _), _, _), _) := current.args[2]) op = "in";
-        return forBinding(pattern, op, convertExprTree(current.args[4]));
+    if (appl(prod(label("forStmt", sort("ForStmt")), _, _), _) := current) {
+        return forStmt(
+            convertForBinding(current.args[4]), convertStatement(current.args[8])
+        );
     }
 
     if (appl(prod(sort("Expr"), _, _), _) := current) {
@@ -201,6 +196,25 @@ Statement convertStatement(Tree current) {
 
     throw "Statement no soportado: <current>";
 }
+
+
+ForBindingNode convertForBinding(Tree current) {
+    current = elegir(current);
+
+    if (appl(prod(label("forBinding", sort("ForBinding")), _, _), _) := current) {
+        PatternNode pattern = convertPattern(current.args[0]);
+        str op = unparse(current.args[2]);
+
+        return forBinding(
+            pattern,
+            op,
+            convertExprTree(current.args[4], convertStructuralExpr)
+        );
+    }
+
+    throw "ForBinding no soportado";
+}
+
 
 PatternNode convertPattern(Tree current) {
     current = elegir(current);
@@ -231,27 +245,38 @@ Expression convertStructuralExpr(Tree current) {
         return convertNew(current);
     }
 
-    throw "Expresión estructural no soportada";
+    throw "Expresión estructural no soportada: <current>";
 }
 
 Expression convertNew(Tree current) {
     current = elegir(current);
-    if (appl(prod(label("newObject", _), _, _), _) := current) {
+
+    if (appl(prod(label("newWithArgs", _), _, _), _) := current) {
         TypeNode t = convertType(current.args[2]);
 
-        list[Expression] argsList = [];
-        if (appl(regular(opt(_)), [Tree aTree]) := current.args[6]) {
-            argsList = convertArgExpressions(aTree);
+        list[Expression] arguments = [];
+        if (appl(regular(opt(_)), [Tree argTree]) := current.args[6]) {
+            arguments = convertArgExpressions(argTree, convertStructuralExpr);
         }
 
         list[OverrideDefinition] overrides = [];
-        if (appl(regular(opt(_)), [appl(_, list[Tree] cbArgs)]) := current.args[10]) {
-            overrides = convertOverridesList(cbArgs[2]);
+        if (appl(regular(opt(_)), [Tree bodyTree]) := current.args[10]) {
+            overrides = convertOverridesList(bodyTree.args[2]);
         }
 
-        return newObject(t, argsList, overrides);
+        return newObject(t, arguments, overrides);
     }
-    throw "NewExpression no soportado";
+
+    if (appl(prod(label("newWithBody", _), _, _), _) := current) {
+        TypeNode t = convertType(current.args[2]);
+
+        list[OverrideDefinition] overrides =
+            convertOverridesList(current.args[4].args[2]);
+
+        return newObject(t, [], overrides);
+    }
+
+    throw "NewExpr no soportada";
 }
 
 OverrideDefinition convertOverride(Tree current) {
