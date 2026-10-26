@@ -241,7 +241,8 @@ Expression convertStructuralExpr(Tree current) {
     }
 
     if (appl(prod(label("newWithArgs", _), _, _), _) := current ||
-        appl(prod(label("newWithBody", _), _, _), _) := current) {
+        appl(prod(label("newWithBody", _), _, _), _) := current ||
+        appl(prod(label("newWithoutArgs", _), _, _), _) := current) {
         return convertNew(current);
     }
 
@@ -274,6 +275,11 @@ Expression convertNew(Tree current) {
             convertOverridesList(current.args[4].args[2]);
 
         return newObject(t, [], overrides);
+    }
+
+    if (appl(prod(label("newWithoutArgs", _), _, _), _) := current) {
+        TypeNode t = convertType(current.args[2]);
+        return newObject(t, [], []);
     }
 
     throw "NewExpr no soportada";

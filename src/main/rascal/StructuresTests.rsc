@@ -25,8 +25,19 @@ bool rejectsProgram(str input) {
 // PRUEBAS NEGATIVAS (ParseErrors esperados)
 // ==========================================
 
-test bool testRejectMissingParens() = 
-    rejectsProgram("method main { val myPuppy = new Puppy }");
+test bool testNewWithoutParens() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            valDecl(
+                "myPuppy",
+                [],
+                newObject(simpleType("Puppy"), [], [])
+            )
+        ])))
+    ) == cleanAST(
+        convertProgram("method main { val myPuppy = new Puppy }")
+    );
 
 test bool testRejectObjectAnimal() = 
     rejectsProgram("objectAnimal method main { }");

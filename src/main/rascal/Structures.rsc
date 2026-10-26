@@ -5,6 +5,7 @@ extend Expressions;
 syntax NewExpr
     = newWithArgs: "new" Type "(" ArgList? ")" ClassBody?
     | newWithBody: "new" Type ClassBody
+    | newWithoutArgs: "new" Type !>> "("
     ;
 
 // Integra la creación de objetos como expresión primaria

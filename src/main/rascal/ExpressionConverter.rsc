@@ -240,6 +240,7 @@ Expression convertExprTree(
     // Construcciones propias de la gramática integrada.
     if (appl(prod(label("newWithArgs", _), _, _), _) := current ||
         appl(prod(label("newWithBody", _), _, _), _) := current ||
+        appl(prod(label("newWithoutArgs", _), _, _), _) := current ||
         appl(prod(label("blockExpression", _), _, _), _) := current) {
         return convertStructural(current);
     }
