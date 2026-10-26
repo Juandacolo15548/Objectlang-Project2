@@ -6,7 +6,7 @@ extend Lexical;
 // Espacios, tabulaciones y saltos de línea
 layout Whitespace =
     ([\ \t\n\r] | LayoutComment)*
-    !>> [\ \t\n\r]
+    !>> [\ \t]
     !>> "//";
 
 // Interpolaciones dentro de strings

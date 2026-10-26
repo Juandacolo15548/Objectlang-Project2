@@ -151,8 +151,10 @@ BlockNode convertBlock(Tree current) {
 list[Statement] extractStatements(Tree current) {
     list[Statement] result = [];
 
-    for (Tree stmtTree <- getListChildren(current)) {
-        result += [convertStatement(stmtTree)];
+    for (Tree child <- getListChildren(current)) {
+        if (appl(prod(label(_, sort("Stmt")), _, _), _) := child) {
+            result += [convertStatement(child)];
+        }
     }
 
     return result;
