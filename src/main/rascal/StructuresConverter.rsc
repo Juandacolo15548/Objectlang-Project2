@@ -238,10 +238,6 @@ PatternNode convertPattern(Tree current) {
 Expression convertStructuralExpr(Tree current) {
     current = elegir(current);
 
-    if (appl(prod(label("blockExpression", _), _, _), _) := current) {
-        return blockExpression(convertBlock(current.args[0]));
-    }
-
     if (appl(prod(label("newWithArgs", _), _, _), _) := current ||
         appl(prod(label("newWithBody", _), _, _), _) := current ||
         appl(prod(label("newWithoutArgs", _), _, _), _) := current) {

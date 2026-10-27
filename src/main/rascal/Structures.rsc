@@ -9,10 +9,7 @@ syntax NewExpr
     ;
 
 // Integra la creación de objetos como expresión primaria
-syntax Primary
-    = blockExpression: Block block
-    | NewExpr
-    ;
+syntax Primary = NewExpr;
 
 syntax OverrideDef 
   = overrideDef: "override" Identifier name "(" {MethodParam ","}* params ")" ":" Type returnType "=" Block body;
