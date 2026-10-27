@@ -51,7 +51,7 @@ syntax Postfix =
 syntax UnaryExpr =
     Postfix
   | unaryMinus: "-" UnaryExpr
-  | unaryNeg: "neg" UnaryExpr
+  | unaryNeg: "neg" !>> [a-zA-Z0-9_] UnaryExpr
   ;
 
 syntax PowExpr =
