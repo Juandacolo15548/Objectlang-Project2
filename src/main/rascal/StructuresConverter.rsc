@@ -2,7 +2,6 @@ module StructuresConverter
 
 import ParseTree;
 import ObjectlangAST;
-import Desambiguar;
 import ExpressionConverter;
 import String;
 
@@ -22,7 +21,6 @@ Program convertProgram(str input) {
 // =======================================================
 
 Program convertModuleTree(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("moduleDef", _), _, _), _) := current) {
         list[Declaration] items = [convertDeclaration(item) | item <- getListChildren(current.args[0])];
         Statement main = convertMainMethod(current.args[2]);
@@ -32,12 +30,10 @@ Program convertModuleTree(Tree current) {
 }
 
 Statement convertMainMethod(Tree current) {
-    current = elegir(current);
     return exprStmt(blockExpression(convertBlock(current.args[4]))); 
 }
 
 Declaration convertDeclaration(Tree current) {
-    current = elegir(current);
     
     if (appl(prod(label("objectItem", _), _, _), _) := current) return convertDeclaration(current.args[0]);
     if (appl(prod(label("methodItem", _), _, _), _) := current) return convertDeclaration(current.args[0]);
@@ -94,7 +90,6 @@ Declaration convertDeclaration(Tree current) {
 // =======================================================
 
 TypeNode convertType(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("simpleType", _), _, _), _) := current) {
         return simpleType(implode(#str, current.args[0]));
     }
@@ -107,7 +102,6 @@ TypeNode convertType(Tree current) {
 }
 
 GenericParameter convertGenericParam(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("genericParam", _), _, _), _) := current) {
         str variance = "";
         if (appl(regular(opt(_)), [varTree]) := current.args[0]) {
@@ -120,7 +114,6 @@ GenericParameter convertGenericParam(Tree current) {
 }
 
 ConstructorParameter convertConstructorParam(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("constructorParam", _), _, _), _) := current) {
         str mutability = "";
         if (appl(prod(label("valMut", _), _, _), _) := current.args[0]) mutability = "val";
@@ -131,7 +124,6 @@ ConstructorParameter convertConstructorParam(Tree current) {
 }
 
 MethodParameter convertMethodParam(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("methodParam", _), _, _), _) := current) {
         return methodParameter(implode(#str, current.args[0]), convertType(current.args[4]));
     }
@@ -143,7 +135,6 @@ MethodParameter convertMethodParam(Tree current) {
 // =======================================================
 
 BlockNode convertBlock(Tree current) {
-    current = elegir(current);
     list[Statement] stmts = extractStatements(current.args[2]);
     return blockNode(stmts);
 }
@@ -161,8 +152,6 @@ list[Statement] extractStatements(Tree current) {
 }
 
 Statement convertStatement(Tree current) {
-    current = elegir(current);
-
     if (appl(prod(label("valStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
     if (appl(prod(label("varStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
     if (appl(prod(label("assignmentStmt", _), _, _), _) := current) return convertStatement(current.args[0]);
@@ -201,7 +190,6 @@ Statement convertStatement(Tree current) {
 
 
 ForBindingNode convertForBinding(Tree current) {
-    current = elegir(current);
 
     if (appl(prod(label("forBinding", sort("ForBinding")), _, _), _) := current) {
         PatternNode pattern = convertPattern(current.args[0]);
@@ -219,7 +207,6 @@ ForBindingNode convertForBinding(Tree current) {
 
 
 PatternNode convertPattern(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("idPattern", _), _, _), _) := current) {
         return idPattern(implode(#str, current.args[0]));
     }
@@ -240,7 +227,6 @@ PatternNode convertPattern(Tree current) {
 // =======================================================
 
 Expression convertStructuralExpr(Tree current) {
-    current = elegir(current);
 
     if (appl(prod(label("newWithArgs", _), _, _), _) := current ||
         appl(prod(label("newWithBody", _), _, _), _) := current ||
@@ -252,7 +238,6 @@ Expression convertStructuralExpr(Tree current) {
 }
 
 Expression convertNew(Tree current) {
-    current = elegir(current);
 
     if (appl(prod(label("newWithArgs", _), _, _), _) := current) {
         TypeNode t = convertType(current.args[2]);
@@ -288,7 +273,6 @@ Expression convertNew(Tree current) {
 }
 
 OverrideDefinition convertOverride(Tree current) {
-    current = elegir(current);
     if (appl(prod(label("overrideDef", _), _, _), list[Tree] currentArgs) := current) {
         str name = implode(#str, currentArgs[2]);
         
@@ -323,7 +307,6 @@ list[MethodParameter] convertMethodParamsList(Tree current) {
 
 
 list[Tree] getListChildren(Tree current) {
-    current = elegir(current);
 
     if (appl(regular(_), list[Tree] args) := current) {
         list[Tree] result = [];
