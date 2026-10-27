@@ -225,7 +225,11 @@ PatternNode convertPattern(Tree current) {
     }
     if (appl(prod(label("tuplePattern", _), _, _), _) := current) {
         str head = implode(#str, current.args[2]);
-        list[str] tail = [implode(#str, t) | t <- getListChildren(current.args[4])];
+
+        list[str] tail = [
+            implode(#str, t) | t <- getListChildren(current.args[6])
+        ];
+
         return tuplePattern(head, tail);
     }
     throw "Pattern no soportado";

@@ -22,7 +22,7 @@ bool rejectsProgram(str input) {
 }
 
 // ==========================================
-// PRUEBAS NEGATIVAS (ParseErrors esperados)
+// PRUEBAS DE CONSTRUCTORES Y RECHAZO SINTÁCTICO
 // ==========================================
 
 test bool testNewWithoutParens() =
@@ -98,3 +98,107 @@ test bool testForStmt() =
             )
         ])))
     ) == cleanAST(convertProgram("method main { for (x \<- xs) print(x) }"));
+
+// ==========================================
+// REGRESIÓN: BLOQUES Y SEPARADORES
+// ==========================================
+
+// Bloque vacío con múltiples saltos de línea.
+test bool testEmptyBlockWithNewlines() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([])))
+    ) == cleanAST(
+        convertProgram("method main {\n\n}")
+    );
+
+// Dos sentencias separadas por líneas en blanco.
+test bool testStatementsWithBlankLines() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            exprStmt(call(identifier("f"), [identifier("x")])),
+            exprStmt(call(identifier("g"), [identifier("y")]))
+        ])))
+    ) == cleanAST(
+        convertProgram("method main {\n\nf(x)\n\ng(y)\n\n}")
+    );
+
+// Dos sentencias no pueden separarse solamente por espacios.
+test bool testRejectStatementsWithoutNewline() =
+    rejectsProgram("method main { f(x) g(y) }");
+
+// Block no puede utilizarse como una expresión arbitraria.
+test bool testRejectBlockAsExpression() =
+    rejectsProgram("method main { val x = {5} }");
+
+
+// ==========================================
+// REGRESIÓN: CONSTRUCTORES
+// ==========================================
+
+// Constructores anidados y expresiones como argumentos.
+test bool testNestedConstructors() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            valDecl(
+                "p",
+                [],
+                newObject(
+                    simpleType("Persona"),
+                    [
+                        newObject(simpleType("Direccion"), [], []),
+                        addition(number(5), number(2))
+                    ],
+                    []
+                )
+            )
+        ])))
+    ) == cleanAST(
+        convertProgram(
+            "method main { val p = new Persona(new Direccion(), 5 + 2) }"
+        )
+    );
+
+
+// ==========================================
+// REGRESIÓN: CICLOS FOR
+// ==========================================
+
+// For con patrón de tupla.
+test bool testForWithTuplePattern() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            forStmt(
+                forBinding(
+                    tuplePattern("name", ["rating"]),
+                    "\<-",
+                    identifier("ratings")
+                ),
+                exprStmt(
+                    call(identifier("print"), [identifier("name")])
+                )
+            )
+        ])))
+    ) == cleanAST(
+        convertProgram(
+            "method main { for ((name, rating) \<- ratings) print(name) }"
+        )
+    );
+
+// Una expresión puede continuar en la siguiente línea.
+test bool testMultilineExpression() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            valDecl(
+                "resultado",
+                [],
+                addition(number(5), number(3))
+            )
+        ])))
+    ) == cleanAST(
+        convertProgram("method main { val resultado = 5 +\n 3 }")
+    );

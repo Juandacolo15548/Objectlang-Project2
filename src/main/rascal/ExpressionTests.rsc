@@ -138,3 +138,19 @@ test bool testInvalidStringCharacter() =
 test bool testIncompleteAddition() =
     rejectsExpression("2+");
 
+// ==========================================
+// REGRESIÓN: PALABRAS RESERVADAS
+// ==========================================
+
+// "negate" debe ser un identificador completo,
+// no el operador "neg" aplicado a "ate".
+test bool testNegateAsIdentifier() =
+    identifier("negate")
+        == cleanAST(convertExpression("negate"));
+
+// Las palabras reservadas pueden aparecer dentro
+// de identificadores más largos.
+test bool testKeywordPrefixesAsIdentifiers() =
+    addition(identifier("negate"), identifier("android"))
+        == cleanAST(convertExpression("negate + android"));
+        
