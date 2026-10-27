@@ -13,7 +13,7 @@ extend Structures;
 // =======================================================
 
 Program convertProgram(str input) {
-    Tree parsed = parse(#start[Module], input, allowAmbiguity=true);
+    Tree parsed = parse(#start[Module], input);
     return convertModuleTree(parsed.top);
 }
 
