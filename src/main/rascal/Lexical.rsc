@@ -100,3 +100,6 @@ start syntax StringTest = SimpleStringLiteral;
 
 // Regla temporal para pruebas
 start syntax IdentifierTest = Identifier;
+
+lexical ValKeyword =
+    @category="keyword" "val" !>> [a-zA-Z0-9_];

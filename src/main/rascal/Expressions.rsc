@@ -32,8 +32,7 @@ lexical StringItems = StringContent*;
 
 // String completo
 syntax StringLiteral =
-    stringLiteral: "\"" StringItems "\""
-  ;
+    @category="string" stringLiteral: "\"" StringItems "\"";
 
 syntax Primary =
     number: IntLiteral

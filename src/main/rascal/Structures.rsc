@@ -23,8 +23,8 @@ syntax Type
 syntax TypeAnnotation 
   = typeAnnDef: ":" Type type;
 
-syntax ValDecl 
-  = valDecl: "val" Identifier name TypeAnnotation? typeAnn "=" Expr expr;
+syntax ValDecl =
+    valDecl: ValKeyword Identifier name TypeAnnotation? typeAnn "=" Expr expr;
 syntax VarDecl 
   = varDecl: "var" Identifier name TypeAnnotation? typeAnn "=" Expr expr;
 
