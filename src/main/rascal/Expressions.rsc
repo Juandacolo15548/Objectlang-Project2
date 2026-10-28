@@ -43,9 +43,10 @@ syntax Primary =
   | grouped: "(" Expr ")"
   ;
 
-syntax Postfix =
-    Primary PostfixOp*
-  ;
+syntax Postfix
+    = Primary
+    | Primary PostfixOp+
+    ;
 
 syntax UnaryExpr =
     Postfix

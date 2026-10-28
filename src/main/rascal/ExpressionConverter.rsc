@@ -129,6 +129,11 @@ Expression convertExprTree(
 
         Expression result = convertExprTree(current.args[0], convertStructural);
 
+        // Postfix sin operaciones: solo Primary
+        if (size(current.args) == 1) {
+            return result;
+        }
+
         list[Tree] operations = [
             op | op <- current.args[2].args,
             appl(prod(sort("PostfixOp"), _, _), _) := op

@@ -202,3 +202,25 @@ test bool testMultilineExpression() =
     ) == cleanAST(
         convertProgram("method main { val resultado = 5 +\n 3 }")
     );
+
+// REGRESIÓN: saltos finales de bloque y comentarios
+
+test bool testBlockWithTrailingNewline() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            valDecl("x", [], number(5))
+        ])))
+    ) == cleanAST(
+        convertProgram("method main {\nval x = 5\n}")
+    );
+
+test bool testBlockWithCommentBeforeStatement() =
+    moduleProgram(
+        [],
+        exprStmt(blockExpression(blockNode([
+            valDecl("x", [], number(5))
+        ])))
+    ) == cleanAST(
+        convertProgram("method main {\n// comentario\nval x = 5\n}")
+    );

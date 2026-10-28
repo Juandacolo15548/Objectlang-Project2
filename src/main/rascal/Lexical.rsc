@@ -80,7 +80,7 @@ lexical Comment =
 
 // Comentario para el layout: no consume el salto de línea
 lexical LayoutComment =
-    "//" CommentChar* !>> CommentChar;
+    "//" ![\n\r]* $;
 
 // Entrada temporal para probar comentarios
 start syntax CommentTest = Comment;
